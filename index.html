@@ -1083,333 +1083,218 @@ document.querySelectorAll('a,button,.skill-card,.project-item,.cert-card').forEa
   el.addEventListener('mouseleave',()=>{cursor.style.width='12px';cursor.style.height='12px';ring.style.width='36px';ring.style.height='36px';});
 });
 
-// ─── THREE.JS 3D — DARK TECHNICAL: NEURAL GRID + CIRCUIT MATRIX
+// ─── THREE.JS 3D — DARK TECHNICAL (OPTIMISED, ~60fps)
 const canvas3 = document.getElementById('three-canvas');
-const renderer = new THREE.WebGLRenderer({canvas:canvas3, antialias:true, alpha:true});
+const renderer = new THREE.WebGLRenderer({canvas:canvas3, antialias:false, alpha:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(1);
 renderer.setClearColor(0x000000, 0);
 
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 500);
-camera.position.set(0, 0, 55);
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 300);
+camera.position.set(0, 6, 48);
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 1. INFINITE GRID FLOOR (receding into depth)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const gridGroup = new THREE.Group();
-scene.add(gridGroup);
-// Primary grid lines
-function makeGrid(size, divisions, color, opacity, y){
-  const geo = new THREE.BufferGeometry();
+// ── 1. STATIC GRID (single merged LineSegments — 1 draw call)
+(function buildGrid(){
   const verts = [];
-  const step = size / divisions;
-  const half = size / 2;
-  for(let i = 0; i <= divisions; i++){
-    const p = -half + i * step;
-    // horizontal
-    verts.push(-half, y, p,  half, y, p);
-    // vertical
-    verts.push(p, y, -half,  p, y, half);
+  const SIZE = 100, STEP = 5;
+  for(let x = -SIZE; x <= SIZE; x += STEP){
+    verts.push(x,-12,-SIZE, x,-12,SIZE);   // along Z
   }
-  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts), 3));
-  const mat = new THREE.LineBasicMaterial({color, transparent:true, opacity});
-  return new THREE.LineSegments(geo, mat);
-}
-const gridMain = makeGrid(120, 30, 0x003344, 0.55, -14);
-const gridSub  = makeGrid(120, 120, 0x001a22, 0.25, -14);
-const gridFar  = makeGrid(120, 10, 0x004466, 0.35, -14);
-gridGroup.add(gridMain, gridSub, gridFar);
-
-// Vertical grid walls (left & right)
-const gridLeft  = makeGrid(120, 20, 0x002233, 0.22, 0);
-gridLeft.rotation.z = Math.PI/2; gridLeft.position.x = -50;
-const gridRight = makeGrid(120, 20, 0x002233, 0.22, 0);
-gridRight.rotation.z = Math.PI/2; gridRight.position.x = 50;
-gridGroup.add(gridLeft, gridRight);
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 2. NEURAL NETWORK — nodes + live connections
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const NN_COUNT = 90;
-const nnNodes = [];
-const nnPositions = [];
-const nnSpeeds = [];
-
-for(let i = 0; i < NN_COUNT; i++){
-  nnPositions.push(new THREE.Vector3(
-    (Math.random() - 0.5) * 90,
-    (Math.random() - 0.5) * 55,
-    (Math.random() - 0.5) * 40 - 5
-  ));
-  nnSpeeds.push(new THREE.Vector3(
-    (Math.random() - 0.5) * 0.018,
-    (Math.random() - 0.5) * 0.012,
-    (Math.random() - 0.5) * 0.008
-  ));
-}
-
-// Node spheres
-const nodeGeo = new THREE.SphereGeometry(0.22, 8, 8);
-const nodeColors = [0x00d4ff, 0x0066ff, 0x7c3aed, 0x00ff88];
-nnPositions.forEach((pos, i) => {
-  const col = nodeColors[i % nodeColors.length];
-  const node = new THREE.Mesh(nodeGeo, new THREE.MeshBasicMaterial({
-    color: col, transparent:true, opacity: 0.55 + Math.random()*0.35
-  }));
-  node.position.copy(pos);
-  scene.add(node);
-  nnNodes.push(node);
-});
-
-// Connection lines — rebuild each frame for live pulse effect
-const MAX_CONN_DIST = 18;
-const connGroup = new THREE.Group();
-scene.add(connGroup);
-
-// Pulse particles travelling along edges
-const pulseCount = 40;
-const pulses = [];
-for(let p = 0; p < pulseCount; p++){
-  const pm = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 6, 6),
-    new THREE.MeshBasicMaterial({color: 0x00d4ff, transparent:true, opacity:0.9})
-  );
-  pm.userData = { t: Math.random(), a: -1, b: -1, speed: 0.004 + Math.random()*0.008 };
-  scene.add(pm);
-  pulses.push(pm);
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 3. CIRCUIT TRACES — horizontal PCB lines with vias
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const circuitGroup = new THREE.Group();
-scene.add(circuitGroup);
-
-function rng(min, max){ return min + Math.random()*(max-min); }
-
-// Generate L-shaped circuit traces
-for(let c = 0; c < 55; c++){
-  const sx = rng(-55, 55), sy = rng(-28, 28), sz = rng(-30, 0);
-  const len1 = rng(2, 12), len2 = rng(1, 8);
-  const dir = Math.random() > 0.5 ? 1 : -1;
-  const col = Math.random() > 0.6 ? 0x003355 : (Math.random() > 0.5 ? 0x002244 : 0x001133);
-  const op = 0.3 + Math.random()*0.45;
-
-  const pts = [
-    new THREE.Vector3(sx, sy, sz),
-    new THREE.Vector3(sx + len1, sy, sz),
-    new THREE.Vector3(sx + len1, sy + dir*len2, sz),
-  ];
-  const geo = new THREE.BufferGeometry().setFromPoints(pts);
-  circuitGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({color:col, transparent:true, opacity:op})));
-
-  // Via (junction dot)
-  const via = new THREE.Mesh(
-    new THREE.CircleGeometry(0.12, 8),
-    new THREE.MeshBasicMaterial({color: 0x004466, transparent:true, opacity: op*0.8})
-  );
-  via.position.set(sx + len1, sy, sz + 0.01);
-  circuitGroup.add(via);
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 4. BINARY DATA RAIN — floating 0/1 columns
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const dataRainGroup = new THREE.Group();
-scene.add(dataRainGroup);
-// We'll use sprite-like meshes as a 3D layer
-const digitGeo = new THREE.PlaneGeometry(0.5, 0.5);
-const digitMats = [
-  new THREE.MeshBasicMaterial({color:0x002233, transparent:true, opacity:0.0, side:THREE.DoubleSide}), // invisible – canvas handles rain
-];
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 5. HEXAGONAL TECH PANELS (mid-depth)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const hexGroup = new THREE.Group();
-scene.add(hexGroup);
-function hexagonPoints(r){
-  const pts = [];
-  for(let i = 0; i <= 6; i++){
-    const a = (i/6)*Math.PI*2 - Math.PI/6;
-    pts.push(new THREE.Vector3(Math.cos(a)*r, Math.sin(a)*r, 0));
+  for(let z = -SIZE; z <= SIZE; z += STEP){
+    verts.push(-SIZE,-12,z, SIZE,-12,z);   // along X
   }
-  return pts;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts),3));
+  scene.add(new THREE.LineSegments(geo,
+    new THREE.LineBasicMaterial({color:0x003344, transparent:true, opacity:0.5})
+  ));
+  // accent every 4th line
+  const accVerts = [];
+  for(let x = -SIZE; x <= SIZE; x += STEP*4){
+    accVerts.push(x,-12,-SIZE, x,-12,SIZE);
+  }
+  for(let z = -SIZE; z <= SIZE; z += STEP*4){
+    accVerts.push(-SIZE,-12,z, SIZE,-12,z);
+  }
+  const geo2 = new THREE.BufferGeometry();
+  geo2.setAttribute('position', new THREE.BufferAttribute(new Float32Array(accVerts),3));
+  scene.add(new THREE.LineSegments(geo2,
+    new THREE.LineBasicMaterial({color:0x005577, transparent:true, opacity:0.6})
+  ));
+})();
+
+// ── 2. NEURAL NODES — 40 nodes, fixed positions, 1 Points draw call
+const NODE_COUNT = 40;
+const nodePos = new Float32Array(NODE_COUNT * 3);
+const nodeSpeeds = [];
+for(let i = 0; i < NODE_COUNT; i++){
+  nodePos[i*3]   = (Math.random()-0.5)*80;
+  nodePos[i*3+1] = (Math.random()-0.5)*40;
+  nodePos[i*3+2] = (Math.random()-0.5)*30 - 5;
+  nodeSpeeds.push(
+    (Math.random()-0.5)*0.015,
+    (Math.random()-0.5)*0.010,
+    (Math.random()-0.5)*0.006
+  );
 }
-const hexPositions = [
-  [-30, 12, -18], [30, -8, -22], [-18, -18, -20],
-  [22, 18, -25],  [0, 20, -15],  [-35, -5, -28],
-  [38, 5, -18],   [10, -22, -20],[-12, 8, -12],
-];
-hexPositions.forEach(([x,y,z], i) => {
-  const r = 2.5 + Math.random()*3;
-  const col = i%3===0 ? 0x003344 : (i%3===1 ? 0x001a33 : 0x002244);
-  const op = 0.18 + Math.random()*0.22;
-  const geo = new THREE.BufferGeometry().setFromPoints(hexagonPoints(r));
-  const h = new THREE.Line(geo, new THREE.LineBasicMaterial({color:col, transparent:true, opacity:op}));
-  h.position.set(x, y, z);
-  h.userData.baseOp = op;
-  h.userData.phase = Math.random()*Math.PI*2;
-  hexGroup.add(h);
+const nodeGeo = new THREE.BufferGeometry();
+nodeGeo.setAttribute('position', new THREE.BufferAttribute(nodePos, 3));
+const nodePoints = new THREE.Points(nodeGeo,
+  new THREE.PointsMaterial({color:0x00d4ff, size:0.55, transparent:true, opacity:0.75, sizeAttenuation:true})
+);
+scene.add(nodePoints);
 
-  // Inner smaller hex
-  const geo2 = new THREE.BufferGeometry().setFromPoints(hexagonPoints(r*0.6));
-  const h2 = new THREE.Line(geo2, new THREE.LineBasicMaterial({color:0x004466, transparent:true, opacity:op*0.5}));
-  h2.position.set(x, y, z);
-  hexGroup.add(h2);
-});
+// ── 3. EDGES — pre-allocated LineSegments buffer (never re-created)
+const MAX_EDGES = 200;
+const edgeBuf = new Float32Array(MAX_EDGES * 6); // 2 verts × 3 floats
+const edgeGeo = new THREE.BufferGeometry();
+edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgeBuf, 3));
+edgeGeo.setDrawRange(0, 0);
+edgeGeo.attributes.position.usage = THREE.DynamicDrawUsage;
+const edgeMesh = new THREE.LineSegments(edgeGeo,
+  new THREE.LineBasicMaterial({color:0x004466, transparent:true, opacity:0.28})
+);
+scene.add(edgeMesh);
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 6. SCAN LINES — horizontal sweeping planes
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const scanLines = [];
-for(let s = 0; s < 3; s++){
-  const geo = new THREE.PlaneGeometry(200, 0.04);
-  const mat = new THREE.MeshBasicMaterial({
-    color: 0x00d4ff, transparent:true, opacity:0.12, side:THREE.DoubleSide
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(0, -30 + s*0.5, 10);
-  mesh.userData.speed = 0.04 + s*0.02;
-  mesh.userData.range = 70;
-  scene.add(mesh);
-  scanLines.push(mesh);
+// ── 4. PULSE DOTS — 12 spheres travelling edges (tiny geo, reused)
+const PULSE_COUNT = 12;
+const pulseMeshes = [];
+const pulseState  = [];
+const pulseGeo    = new THREE.SphereGeometry(0.15, 5, 5);
+for(let i = 0; i < PULSE_COUNT; i++){
+  const m = new THREE.Mesh(pulseGeo,
+    new THREE.MeshBasicMaterial({color:0x00d4ff, transparent:true, opacity:0.9})
+  );
+  scene.add(m);
+  pulseMeshes.push(m);
+  pulseState.push({t:Math.random(), a:Math.floor(Math.random()*NODE_COUNT), b:Math.floor(Math.random()*NODE_COUNT), speed:0.006+Math.random()*0.008});
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 7. FLOATING TECH CUBES (wireframe)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const cubeGroup = new THREE.Group();
-scene.add(cubeGroup);
-const cubeData = [
-  [-22, 8, -10, 2.2, 0x003355], [20, -6, -12, 1.8, 0x002244],
-  [-8, -14, -8, 1.4, 0x004455], [16, 12, -8, 1.0, 0x003344],
-  [-28, -10, -15, 1.6, 0x001a33],[5, 16, -6, 1.2, 0x004466],
-];
-cubeData.forEach(([x,y,z,s,col])=>{
-  const wf = new THREE.Mesh(
+// ── 5. CIRCUIT TRACES — 30 L-shapes, all in one LineSegments (1 draw call)
+(function buildCircuits(){
+  const verts = [];
+  for(let c = 0; c < 30; c++){
+    const sx=(Math.random()-0.5)*90, sy=(Math.random()-0.5)*45, sz=-10-Math.random()*20;
+    const l1=2+Math.random()*10, l2=1+Math.random()*6, dir=Math.random()>0.5?1:-1;
+    verts.push(sx,sy,sz, sx+l1,sy,sz);
+    verts.push(sx+l1,sy,sz, sx+l1,sy+dir*l2,sz);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts),3));
+  scene.add(new THREE.LineSegments(geo,
+    new THREE.LineBasicMaterial({color:0x003355, transparent:true, opacity:0.4})
+  ));
+})();
+
+// ── 6. WIREFRAME CUBES — 5 boxes
+const cubes = [];
+[[-20,7,-10,1.8],[18,-5,-12,2.0],[-7,-12,-8,1.4],[14,11,-7,1.1],[0,-10,-15,2.2]].forEach(([x,y,z,s])=>{
+  const m = new THREE.Mesh(
     new THREE.BoxGeometry(s,s,s),
-    new THREE.MeshBasicMaterial({color:col, wireframe:true, transparent:true, opacity:0.35})
+    new THREE.MeshBasicMaterial({color:0x003355, wireframe:true, transparent:true, opacity:0.3})
   );
-  wf.position.set(x,y,z);
-  wf.userData.rotSpeed = { x: (Math.random()-0.5)*0.008, y:(Math.random()-0.5)*0.012 };
-  cubeGroup.add(wf);
+  m.position.set(x,y,z);
+  m.userData.rx = (Math.random()-0.5)*0.006;
+  m.userData.ry = (Math.random()-0.5)*0.010;
+  scene.add(m);
+  cubes.push(m);
 });
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MOUSE + SCROLL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── 7. HEXAGON OUTLINES — 6 hexes, 1 draw call
+(function buildHexes(){
+  const verts = [];
+  [[-28,10,-18,3],[26,-6,-20,2.5],[-10,-16,-15,2],[20,15,-22,3.5],[-32,-8,-25,2],[8,18,-12,2.2]].forEach(([x,y,z,r])=>{
+    for(let i=0;i<6;i++){
+      const a1=(i/6)*Math.PI*2-Math.PI/6, a2=((i+1)/6)*Math.PI*2-Math.PI/6;
+      verts.push(x+Math.cos(a1)*r, y+Math.sin(a1)*r, z,
+                 x+Math.cos(a2)*r, y+Math.sin(a2)*r, z);
+    }
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts),3));
+  scene.add(new THREE.LineSegments(geo,
+    new THREE.LineBasicMaterial({color:0x004455, transparent:true, opacity:0.35})
+  ));
+})();
+
+// ── MOUSE + SCROLL (throttled)
 let bgMouseX=0, bgMouseY=0, bgScrollY=0, bgTargetScroll=0;
-window.addEventListener('scroll', ()=>{ bgTargetScroll = window.scrollY; });
+window.addEventListener('scroll', ()=>{ bgTargetScroll=window.scrollY; }, {passive:true});
 document.addEventListener('mousemove', e=>{
-  bgMouseX = (e.clientX/window.innerWidth - 0.5)*2;
-  bgMouseY = (e.clientY/window.innerHeight - 0.5)*2;
-});
+  bgMouseX=(e.clientX/window.innerWidth-0.5)*2;
+  bgMouseY=(e.clientY/window.innerHeight-0.5)*2;
+}, {passive:true});
 
-// Edge cache for pulse routing
-let edgeList = [];
-
+let frameCount = 0;
+const _va = new THREE.Vector3(), _vb = new THREE.Vector3();
 const bgClock = new THREE.Clock();
+
 (function bgAnimate(){
   requestAnimationFrame(bgAnimate);
   const t = bgClock.getElapsedTime();
+  frameCount++;
   bgScrollY += (bgTargetScroll - bgScrollY)*0.05;
   const sp = bgScrollY/(document.body.scrollHeight - window.innerHeight || 1);
 
-  // ── Camera: slow mouse parallax + scroll drift
-  camera.position.x += (bgMouseX*6 - camera.position.x)*0.02;
-  camera.position.y += (-bgMouseY*4 - camera.position.y)*0.02;
-  camera.position.z = 55 - sp*18;
-  camera.lookAt(0, 0, 0);
+  // Camera
+  camera.position.x += (bgMouseX*5 - camera.position.x)*0.02;
+  camera.position.y += (-bgMouseY*3 + 6 - camera.position.y)*0.02;
+  camera.position.z  = 48 - sp*15;
+  camera.lookAt(0,0,0);
 
-  // ── Move neural nodes
-  nnPositions.forEach((pos, i)=>{
-    pos.add(nnSpeeds[i]);
-    // Wrap boundaries
-    if(pos.x >  48) nnSpeeds[i].x *= -1;
-    if(pos.x < -48) nnSpeeds[i].x *= -1;
-    if(pos.y >  28) nnSpeeds[i].y *= -1;
-    if(pos.y < -28) nnSpeeds[i].y *= -1;
-    nnNodes[i].position.copy(pos);
-    // Pulse opacity
-    nnNodes[i].material.opacity = 0.3 + 0.5*Math.abs(Math.sin(t*1.2 + i*0.4));
-  });
+  // Move nodes
+  for(let i=0; i<NODE_COUNT; i++){
+    nodePos[i*3]   += nodeSpeeds[i*3];
+    nodePos[i*3+1] += nodeSpeeds[i*3+1];
+    nodePos[i*3+2] += nodeSpeeds[i*3+2];
+    if(nodePos[i*3]   >  42) nodeSpeeds[i*3]   = -Math.abs(nodeSpeeds[i*3]);
+    if(nodePos[i*3]   < -42) nodeSpeeds[i*3]   =  Math.abs(nodeSpeeds[i*3]);
+    if(nodePos[i*3+1] >  22) nodeSpeeds[i*3+1] = -Math.abs(nodeSpeeds[i*3+1]);
+    if(nodePos[i*3+1] < -22) nodeSpeeds[i*3+1] =  Math.abs(nodeSpeeds[i*3+1]);
+  }
+  nodeGeo.attributes.position.needsUpdate = true;
 
-  // ── Rebuild connections (throttle every 3 frames)
-  if(Math.round(t*60) % 3 === 0){
-    connGroup.clear();
-    edgeList = [];
-    for(let i=0; i<NN_COUNT; i++){
-      for(let j=i+1; j<NN_COUNT; j++){
-        const d = nnPositions[i].distanceTo(nnPositions[j]);
-        if(d < MAX_CONN_DIST){
-          const op = (1 - d/MAX_CONN_DIST)*0.35;
-          const col = d < 10 ? 0x004466 : 0x002233;
-          const geo = new THREE.BufferGeometry().setFromPoints([nnPositions[i].clone(), nnPositions[j].clone()]);
-          connGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({color:col, transparent:true, opacity:op})));
-          edgeList.push([i, j]);
+  // Rebuild edges every 4 frames
+  if(frameCount % 4 === 0){
+    let eIdx = 0;
+    const THRESH = 20 * 20; // squared distance
+    for(let i=0; i<NODE_COUNT && eIdx<MAX_EDGES; i++){
+      const ax=nodePos[i*3], ay=nodePos[i*3+1], az=nodePos[i*3+2];
+      for(let j=i+1; j<NODE_COUNT && eIdx<MAX_EDGES; j++){
+        const dx=ax-nodePos[j*3], dy=ay-nodePos[j*3+1], dz=az-nodePos[j*3+2];
+        if(dx*dx+dy*dy+dz*dz < THRESH){
+          const base = eIdx*6;
+          edgeBuf[base]  =ax; edgeBuf[base+1]=ay; edgeBuf[base+2]=az;
+          edgeBuf[base+3]=nodePos[j*3]; edgeBuf[base+4]=nodePos[j*3+1]; edgeBuf[base+5]=nodePos[j*3+2];
+          eIdx++;
         }
       }
     }
+    edgeGeo.setDrawRange(0, eIdx*2);
+    edgeGeo.attributes.position.needsUpdate = true;
   }
 
-  // ── Move pulses along edges
-  pulses.forEach(pm=>{
-    const ud = pm.userData;
-    // Assign edge if none
-    if(ud.a < 0 || edgeList.length === 0){
-      const e = edgeList[Math.floor(Math.random()*edgeList.length)];
-      if(!e) return;
-      [ud.a, ud.b] = e; ud.t = 0;
-    }
-    ud.t += ud.speed;
-    if(ud.t >= 1){
-      ud.t = 0;
-      const e = edgeList[Math.floor(Math.random()*edgeList.length)];
-      if(e){ [ud.a, ud.b] = e; }
-    }
-    if(ud.a >= 0 && ud.b >= 0 && nnPositions[ud.a] && nnPositions[ud.b]){
-      pm.position.lerpVectors(nnPositions[ud.a], nnPositions[ud.b], ud.t);
-      pm.material.opacity = 0.5 + 0.45*Math.sin(ud.t*Math.PI);
-    }
+  // Move pulses
+  pulseState.forEach((ps, i)=>{
+    ps.t += ps.speed;
+    if(ps.t >= 1){ ps.t=0; ps.a=Math.floor(Math.random()*NODE_COUNT); ps.b=Math.floor(Math.random()*NODE_COUNT); }
+    _va.set(nodePos[ps.a*3], nodePos[ps.a*3+1], nodePos[ps.a*3+2]);
+    _vb.set(nodePos[ps.b*3], nodePos[ps.b*3+1], nodePos[ps.b*3+2]);
+    pulseMeshes[i].position.lerpVectors(_va, _vb, ps.t);
+    pulseMeshes[i].material.opacity = 0.4 + 0.55*Math.sin(ps.t*Math.PI);
   });
 
-  // ── Animate scan lines
-  scanLines.forEach((sl, i)=>{
-    sl.position.y += sl.userData.speed;
-    if(sl.position.y > 38) sl.position.y = -38;
-    sl.material.opacity = 0.06 + 0.08*Math.abs(Math.sin(t*0.5 + i));
-  });
-
-  // ── Hex panel flicker
-  hexGroup.children.forEach((h, i)=>{
-    if(h.userData.baseOp !== undefined){
-      h.material.opacity = h.userData.baseOp * (0.6 + 0.5*Math.sin(t*0.8 + h.userData.phase));
-    }
-  });
-
-  // ── Cube rotation
-  cubeGroup.children.forEach(c=>{
-    c.rotation.x += c.userData.rotSpeed.x;
-    c.rotation.y += c.userData.rotSpeed.y;
-  });
-
-  // ── Grid scroll parallax (grid recedes as you scroll)
-  gridGroup.position.z = sp * 20;
-  gridGroup.position.x = bgMouseX * 1.5;
-
-  // ── Circuit group slow drift
-  circuitGroup.position.x = Math.sin(t*0.04)*1.5;
-  circuitGroup.position.y = Math.cos(t*0.03)*0.8;
+  // Cubes rotate
+  cubes.forEach(c=>{ c.rotation.x+=c.userData.rx; c.rotation.y+=c.userData.ry; });
 
   renderer.render(scene, camera);
 })();
 
 window.addEventListener('resize', ()=>{
-  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth,window.innerHeight);
 });
 
 // ─── NAV
