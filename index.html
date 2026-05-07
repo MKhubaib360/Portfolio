@@ -657,7 +657,7 @@
       grid-template-columns:1fr !important;
       gap:40px;
     }
-    .hero-name { font-size:clamp(2.8rem,12vw,4.5rem) !important; }
+    .hero-name { font-size:clamp(2.2rem,10vw,4.5rem) !important; word-break: break-word; }
     .hero-sub  { font-size:0.95rem; max-width:100%; }
 
     /* code window readable on mobile */
@@ -711,7 +711,7 @@
 
   /* ── SMALL MOBILE: ≤ 400px ── */
   @media (max-width:400px) {
-    .hero-name { font-size:2.4rem !important; }
+    .hero-name { font-size:2rem !important; }
     .skills-grid { grid-template-columns:1fr; }
     .about-stats { grid-template-columns:1fr 1fr; }
     .btn-primary, .btn-outline { padding:12px 20px; font-size:0.78rem; }
@@ -719,6 +719,12 @@
 </style>
 </head>
 <body>
+<script>
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+  window.scrollTo(0, 0);
+</script>
 
 <canvas id="three-canvas"></canvas>
 <canvas id="code-rain-canvas"></canvas>
