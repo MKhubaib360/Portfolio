@@ -22,12 +22,12 @@
     --card: rgba(6, 14, 35, 0.88);
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow-x: hidden; width: 100%; position: relative; }
   html { scroll-behavior: smooth; }
   body {
     font-family: 'DM Sans', sans-serif;
     background: var(--bg);
     color: var(--text);
-    overflow-x: hidden;
     cursor: none;
   }
   #cursor {
@@ -657,7 +657,7 @@
       grid-template-columns:1fr !important;
       gap:40px;
     }
-    .hero-name { font-size:clamp(2.2rem,10vw,4.5rem) !important; word-break: break-word; }
+    .hero-name { font-size:clamp(1.8rem,10vw,4.5rem) !important; }
     .hero-sub  { font-size:0.95rem; max-width:100%; }
 
     /* code window readable on mobile */
