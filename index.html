@@ -126,7 +126,7 @@
   .hero-eyebrow::before { content:''; width:40px; height:1px; background:var(--accent); }
   .hero-name {
     font-family:'Syne',sans-serif; font-weight:800;
-    font-size:clamp(3.5rem, 8vw, 7rem);
+    font-size:clamp(2.8rem, 5vw, 5.2rem);
     line-height:0.95; letter-spacing:-0.03em;
     opacity:0; animation:fadeUp 0.9s 0.5s forwards;
     text-shadow: 0 2px 30px rgba(0,0,0,0.8);
@@ -198,48 +198,87 @@
     display:grid; grid-template-columns:1fr 1fr; gap:80px;
     align-items:center; width:100%; max-width:1200px; margin:0 auto;
   }
+  /* ── 3D PROFILE CARD ── */
   .about-img-wrap {
-    perspective: 1000px;
     position: relative;
-    max-width: 340px;
-  }
-  .about-img-wrap img {
     width: 100%;
-    max-width: 340px;
-    height: 460px;
-    object-fit: cover;
-    object-position: center top;
-    border-radius: 12px;
-    display:block;
-    transform: rotateY(0deg) rotateX(0deg);
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,212,255,0.15);
-    background: linear-gradient(135deg, #040d1f 0%, #0a1a3a 50%, #040d1f 100%);
+    max-width: 360px;
+    perspective: 1200px;
+    flex-shrink: 0;
   }
-  /* Fallback avatar when image fails to load */
-  .about-img-wrap img::after {
-    content: 'MK';
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Syne',sans-serif; font-size:5rem; font-weight:800;
-    color:var(--accent); background:linear-gradient(135deg,#040d1f,#0a1a3a);
+  .img-3d-card {
+    position: relative;
+    width: 100%;
+    border-radius: 16px;
+    transform-style: preserve-3d;
+    transform: rotateX(0deg) rotateY(0deg);
+    transition: transform 0.12s ease-out, box-shadow 0.3s ease;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.8),
+      0 0 0 1px rgba(0,212,255,0.18),
+      0 0 60px rgba(0,102,255,0.15);
+    cursor: none;
+    will-change: transform;
   }
-  .about-img-wrap img:hover {
-    box-shadow: 0 30px 80px rgba(0,0,0,0.85),
-                0 0 40px rgba(0,212,255,0.3),
-                0 0 0 1px rgba(0,212,255,0.25);
+  @keyframes imgFloat {
+    0%,100% { transform: translateY(0px) rotateX(2deg) rotateY(-2deg); }
+    50%      { transform: translateY(-12px) rotateX(-1deg) rotateY(2deg); }
   }
-  .about-img-wrap::before {
-    content:''; position:absolute; inset:-12px;
-    border:1px solid var(--accent); border-radius:2px;
-    opacity:0.3; transform:translate(12px,12px); z-index:-1;
+  .img-3d-card.floating { animation: imgFloat 5s ease-in-out infinite; }
+  .img-3d-card.floating:hover { animation: none; }
+  .img-3d-card img {
+    width: 100%; height: 480px;
+    object-fit: cover; object-position: center top;
+    border-radius: 16px; display: block;
   }
-  .about-img-wrap::after {
-    content:'';
-    position:absolute;
-    inset:0;
-    background: radial-gradient(circle at var(--x,50%) var(--y,50%), rgba(0,212,255,0.15), transparent 60%);
-    pointer-events:none;
+  .img-holo {
+    position: absolute; inset: 0; border-radius: 16px;
+    background: linear-gradient(135deg,rgba(0,212,255,0) 0%,rgba(0,102,255,0.08) 30%,rgba(124,58,237,0.06) 60%,rgba(0,212,255,0) 100%);
+    pointer-events: none; transition: background 0.15s;
+  }
+  @keyframes scanMove { 0%{top:-4%;opacity:0.7;} 100%{top:104%;opacity:0;} }
+  .img-scan {
+    position: absolute; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg,transparent 0%,rgba(0,212,255,0.6) 20%,rgba(0,212,255,1) 50%,rgba(0,212,255,0.6) 80%,transparent 100%);
+    filter: blur(1px); pointer-events: none;
+    animation: scanMove 3.5s linear infinite; border-radius: 2px;
+  }
+  .img-corner {
+    position: absolute; width: 22px; height: 22px;
+    pointer-events: none; z-index: 3;
+  }
+  .img-corner::before,.img-corner::after {
+    content: ''; position: absolute; background: var(--accent); border-radius: 1px;
+  }
+  .img-corner::before { width: 2px; height: 22px; top: 0; left: 0; }
+  .img-corner::after  { width: 22px; height: 2px; top: 0; left: 0; }
+  .img-corner.tl { top:-2px; left:-2px; }
+  .img-corner.tr { top:-2px; right:-2px; transform:scaleX(-1); }
+  .img-corner.bl { bottom:-2px; left:-2px; transform:scaleY(-1); }
+  .img-corner.br { bottom:-2px; right:-2px; transform:scale(-1); }
+  @keyframes dotPulse { 0%,100%{transform:scale(1);opacity:0.8;} 50%{transform:scale(1.6);opacity:1;} }
+  .img-dot {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 10px var(--accent),0 0 20px var(--accent);
+    pointer-events: none; z-index: 3; animation: dotPulse 2s ease-in-out infinite;
+  }
+  .img-dot:nth-child(5) { top:20px; right:-4px; animation-delay:0s; }
+  .img-dot:nth-child(6) { bottom:80px; left:-4px; animation-delay:0.8s; background:var(--accent2); box-shadow:0 0 10px var(--accent2),0 0 20px var(--accent2); }
+  .img-dot:nth-child(7) { top:45%; right:-4px; animation-delay:1.4s; background:#7c3aed; box-shadow:0 0 10px #7c3aed,0 0 20px #7c3aed; }
+  .img-badge {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(2,8,20,0.88); backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,212,255,0.25); border-radius: 20px;
+    padding: 7px 16px; display: flex; align-items: center; gap: 8px;
+    white-space: nowrap; z-index: 4;
+  }
+  @keyframes greenPulse { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5);} 50%{box-shadow:0 0 0 5px rgba(34,197,94,0);} }
+  .badge-dot { width:7px; height:7px; border-radius:50%; background:#22c55e; box-shadow:0 0 8px #22c55e; animation:greenPulse 1.5s infinite; }
+  .badge-text { font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--text); letter-spacing:0.08em; }
+  .img-glow {
+    position: absolute; inset: -20px; border-radius: 24px;
+    background: radial-gradient(ellipse at 50% 60%,rgba(0,102,255,0.18) 0%,rgba(0,212,255,0.08) 40%,transparent 70%);
+    pointer-events: none; z-index: -1; filter: blur(12px);
   }
   .about-text p {
     font-size:1rem; color:var(--muted); line-height:1.85;
@@ -484,17 +523,18 @@
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0,212,255,0.15);
     border-radius: 12px;
-    padding:0; font-family:'JetBrains Mono',monospace; font-size:0.72rem; line-height:1.8; overflow:hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6),
-                0 0 40px rgba(0,102,255,0.15);
-    transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
-    width: 100%;
-    max-width: 100%;
+    padding:0;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;
+    line-height:1.8;
+    overflow:hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,102,255,0.15);
+    width:100%;
+    max-width:100%;
+    box-sizing:border-box;
   }
   .code-window:hover {
-    box-shadow: 0 30px 80px rgba(0,0,0,0.7),
-                0 0 60px rgba(0,212,255,0.25);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(0,212,255,0.25);
   }
   .code-titlebar { display:flex; align-items:center; gap:7px; padding:10px 14px; background:rgba(255,255,255,0.04); border-bottom:1px solid var(--border); }
   .code-dot { width:10px; height:10px; border-radius:50%; }
@@ -529,24 +569,152 @@
   @keyframes coreSpin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
   .core-spin { animation:coreSpin 20s linear infinite; transform-origin:130px 130px; }
 
-  @media(max-width:768px){
-    #tech-showcase{padding:40px 24px;}
-    .tech-showcase-grid{grid-template-columns:1fr;}
-    .skill-bar-section{padding:40px 24px;}
-    .skill-bars-grid{grid-template-columns:1fr;gap:28px;}
+  /* ── HAMBURGER MENU ── */
+  .nav-hamburger {
+    display:none; flex-direction:column; gap:5px; cursor:pointer;
+    background:none; border:none; padding:4px; z-index:200;
+  }
+  .nav-hamburger span {
+    display:block; width:22px; height:2px;
+    background:var(--text); border-radius:2px;
+    transition:transform 0.3s, opacity 0.3s;
+  }
+  .nav-hamburger.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+  .nav-hamburger.open span:nth-child(2) { opacity:0; }
+  .nav-hamburger.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+
+  /* ── MOBILE NAV DRAWER ── */
+  .mobile-nav-drawer {
+    display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(2,8,20,0.97); backdrop-filter:blur(20px);
+    z-index:150; flex-direction:column; align-items:center; justify-content:center; gap:32px;
+  }
+  .mobile-nav-drawer.open { display:flex; }
+  .mobile-nav-drawer a {
+    font-family:'Syne',sans-serif; font-size:2rem; font-weight:700;
+    color:var(--muted); text-decoration:none; letter-spacing:0.05em;
+    transition:color 0.3s;
+  }
+  .mobile-nav-drawer a:hover { color:var(--accent); }
+
+  /* ── HERO GRID CLASS ── */
+  .hero-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:48px;
+    align-items:start;
+    width:100%;
+    max-width:1200px;
+    margin:0 auto;
+    overflow:visible;
+  }
+  /* Code window column — never overflow */
+  .hero-code-col {
+    min-width:0;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
   }
 
+  /* ── TABLET: 769px – 1024px ── */
+  @media (max-width:1024px) {
+    nav { padding:18px 32px; }
+    section { padding:100px 40px; }
+    #hero { padding:120px 40px 80px !important; }
+    .hero-grid { gap:32px; }
+    .hero-name { font-size:clamp(2.4rem,4.5vw,4rem) !important; }
+    .code-window { font-size:0.65rem !important; }
+    #about .inner { gap:48px; }
+    .tech-showcase-grid { grid-template-columns:1fr 1fr; }
+    .skill-bars-grid { gap:32px 48px; }
+    #tech-showcase { padding:40px 40px 60px; }
+    .skill-bar-section { padding:40px 40px 60px; }
+    footer { padding:32px 40px; }
+    .contact-grid { gap:48px; }
+  }
+
+  /* ── MOBILE: ≤ 768px ── */
   @media (max-width:768px) {
-    nav { padding:16px 24px; }
-    .nav-links { display:none; }
-    section { padding:100px 24px; }
-    #about .inner { grid-template-columns:1fr; gap:40px; }
-    .contact-grid { grid-template-columns:1fr; gap:48px; }
-    .project-item { grid-template-columns:40px 1fr; }
-    .project-link { display:none; }
-    footer { flex-direction:column; gap:12px; text-align:center; padding:32px 24px; }
+    /* cursor off on touch */
     body { cursor:auto; }
     #cursor, #cursor-ring { display:none; }
+
+    /* nav */
+    nav { padding:14px 20px; }
+    .nav-links { display:none; }
+    .nav-hamburger { display:flex; }
+
+    /* sections */
+    section { padding:90px 20px 60px; min-height:auto; }
+    #hero {
+      padding:100px 20px 80px !important;
+      min-height:100svh !important;
+    }
+
+    /* hero: stack code window below text */
+    .hero-grid {
+      grid-template-columns:1fr !important;
+      gap:40px;
+    }
+    .hero-name { font-size:clamp(2.8rem,12vw,4.5rem) !important; }
+    .hero-sub  { font-size:0.95rem; max-width:100%; }
+
+    /* code window readable on mobile */
+    .code-window { font-size:0.62rem !important; }
+    .code-body   { padding:12px 14px !important; line-height:1.7 !important; }
+
+    /* about */
+    #about .inner { grid-template-columns:1fr; gap:36px; }
+    .about-img-wrap { max-width:100%; }
+    .img-3d-card img { height:380px; }
+    .about-stats { grid-template-columns:repeat(3,1fr); gap:12px; }
+    .stat-num { font-size:1.6rem; }
+
+    /* skills grid — 2 cols on mobile */
+    .skills-grid { grid-template-columns:1fr 1fr; gap:12px; }
+    .skill-card { padding:16px; }
+
+    /* projects */
+    .project-item { grid-template-columns:36px 1fr; gap:16px; }
+    .project-link { display:none; }
+    .project-info h3 { font-size:1.05rem; }
+
+    /* certs */
+    .certs-grid { grid-template-columns:1fr; }
+
+    /* contact */
+    .contact-grid { grid-template-columns:1fr; gap:40px; }
+
+    /* tech showcase */
+    #tech-showcase { padding:40px 20px 50px; }
+    .tech-showcase-grid { grid-template-columns:1fr; gap:16px; }
+    .tech-card { min-height:240px; padding:20px 16px; }
+
+    /* skill bars */
+    .skill-bar-section { padding:40px 20px 50px; }
+    .skill-bars-grid { grid-template-columns:1fr; gap:24px; }
+
+    /* section header */
+    .section-header { margin-bottom:40px; }
+
+    /* footer */
+    footer { flex-direction:column; gap:10px; text-align:center; padding:28px 20px; }
+
+    /* chat panel */
+    #chat-panel { right:16px; bottom:84px; width:calc(100vw - 32px); }
+    #chat-toggle { right:16px; bottom:16px; }
+
+    /* hide scroll hint on mobile */
+    .hero-scroll-hint { display:none; }
+  }
+
+  /* ── SMALL MOBILE: ≤ 400px ── */
+  @media (max-width:400px) {
+    .hero-name { font-size:2.4rem !important; }
+    .skills-grid { grid-template-columns:1fr; }
+    .about-stats { grid-template-columns:1fr 1fr; }
+    .btn-primary, .btn-outline { padding:12px 20px; font-size:0.78rem; }
   }
 </style>
 </head>
@@ -568,11 +736,23 @@
     <li><a href="#certs">Certs</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
+  <button class="nav-hamburger" id="hamburger" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
+<!-- Mobile Nav Drawer -->
+<div class="mobile-nav-drawer" id="mobile-drawer">
+  <a href="#about"    onclick="closeDrawer()">About</a>
+  <a href="#skills"   onclick="closeDrawer()">Skills</a>
+  <a href="#projects" onclick="closeDrawer()">Projects</a>
+  <a href="#certs"    onclick="closeDrawer()">Certs</a>
+  <a href="#contact"  onclick="closeDrawer()">Contact</a>
+</div>
+
 <!-- HERO -->
-<section id="hero" style="min-height:100vh;padding:140px 60px 100px;overflow:visible;">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;width:100%;max-width:1200px;margin:0 auto;">
+<section id="hero" style="min-height:100vh;padding:130px 60px 100px;overflow:hidden;">
+  <div class="hero-grid">
     <div style="padding-top:20px;">
       <p class="hero-eyebrow">Software Engineer · Designer</p>
       <h1 class="hero-name">
@@ -586,7 +766,7 @@
       </div>
     </div>
     <!-- Animated Code Window -->
-    <div style="opacity:1;animation:fadeIn 1.2s 1s forwards;display:flex;flex-direction:column;gap:16px;">
+    <div class="hero-code-col" style="opacity:1;animation:fadeIn 1.2s 1s forwards;">
       <div class="code-window">
         <div class="code-titlebar">
           <span class="code-dot cd-r"></span>
@@ -655,10 +835,23 @@
 <section id="about">
   <div class="inner">
     <div class="about-img-wrap reveal">
-      <img src="Profile.jpg" alt="Muhammad Khubaib" onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='flex'">
-      <div class="img-fallback" style="display:none;width:100%;height:460px;border-radius:12px;background:linear-gradient(135deg,#040d1f 0%,#071428 40%,#0a1a3a 100%);align-items:center;justify-content:center;flex-direction:column;gap:16px;border:1px solid rgba(0,212,255,0.2);box-shadow:0 20px 50px rgba(0,0,0,0.7),0 0 60px rgba(0,102,255,0.12);">
-        <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:#fff;box-shadow:0 0 30px rgba(0,212,255,0.4);">MK</div>
-        <div style="font-family:'Syne',sans-serif;font-size:1rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;">Place Profile.jpeg here</div>
+      <div class="img-glow"></div>
+      <div class="img-3d-card floating" id="img3d">
+        <div class="img-corner tl"></div>
+        <div class="img-corner tr"></div>
+        <div class="img-corner bl"></div>
+        <div class="img-corner br"></div>
+        <div class="img-dot"></div>
+        <div class="img-dot"></div>
+        <div class="img-dot"></div>
+        <img src="mKhubaib.png" alt="Muhammad Khubaib"
+          onerror="this.onerror=null;this.src='Profile.jpg';">
+        <div class="img-scan"></div>
+        <div class="img-holo"></div>
+        <div class="img-badge">
+          <div class="badge-dot"></div>
+          <span class="badge-text">Available for Work</span>
+        </div>
       </div>
     </div>
     <div class="about-text">
@@ -938,7 +1131,7 @@
           <p class="project-desc">Graph-based flight routing system using Dijkstra's algorithm for optimal path computation between cities. Implements adjacency lists, priority queues, and custom graph traversal.</p>
           <div class="project-tags"><span class="tag">C++</span><span class="tag">DSA</span><span class="tag">Graphs</span><span class="tag">Dijkstra</span></div>
         </div>
-        <a href="https://github.com/muhammad-khubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
+        <a href="https://github.com/Mkhubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
       </div>
       <div class="project-item reveal reveal-delay-1">
         <span class="project-num">02</span>
@@ -947,7 +1140,7 @@
           <p class="project-desc">Classic Breakout game in x86 NASM Assembly on DOSBox. Uses INT 10h for pixel-level graphics, INT 16h for keyboard input, real-time collision detection.</p>
           <div class="project-tags"><span class="tag">NASM</span><span class="tag">x86 ASM</span><span class="tag">DOSBox</span><span class="tag">INT 10h</span></div>
         </div>
-        <a href="https://github.com/muhammad-khubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
+        <a href="https://github.com/Mkhubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
       </div>
       <div class="project-item reveal reveal-delay-2">
         <span class="project-num">03</span>
@@ -956,7 +1149,7 @@
           <p class="project-desc">Full OOP-based system with file handling, student and course record management, enrollment logic, and grade computation with clean class hierarchies.</p>
           <div class="project-tags"><span class="tag">C++</span><span class="tag">OOP</span><span class="tag">File I/O</span></div>
         </div>
-        <a href="https://github.com/muhammad-khubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
+        <a href="https://github.com/Mkhubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
       </div>
       <div class="project-item reveal reveal-delay-3">
         <span class="project-num">04</span>
@@ -965,16 +1158,24 @@
           <p class="project-desc">Responsive multi-page site with smooth scroll animations, glassmorphism UI, and dynamic menu. Built from scratch with vanilla HTML, CSS, and JavaScript.</p>
           <div class="project-tags"><span class="tag">HTML</span><span class="tag">CSS</span><span class="tag">JavaScript</span></div>
         </div>
-        <a href="https://github.com/muhammad-khubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
+        <a href="https://github.com/MKhubaib360/craze-caffe-storefront" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
       </div>
-      <div class="project-item reveal reveal-delay-4">
+      <div class="project-item reveal">
         <span class="project-num">05</span>
         <div class="project-info">
-          <h3>OS IPC Lab Suite</h3>
-          <p class="project-desc">C programs demonstrating OS-level IPC: unnamed pipes, shared memory with UNIX signals, bounded-buffer producer-consumer, and bidirectional pipe communication.</p>
-          <div class="project-tags"><span class="tag">C</span><span class="tag">Linux</span><span class="tag">IPC</span><span class="tag">POSIX</span></div>
+          <h3>Waste Management System</h3>
+          <p class="project-desc">Full-stack municipal recycling system built for the Database Systems course. Designed a 14-table Oracle 11g database from an EERD with ISA hierarchy, weak entities, and M:N resolvers. Backend is a Node.js + Express.js REST API with 44 endpoints and full CRUD. Frontend is a React-based dark dashboard with sidebar navigation, paginated tables, and live Oracle data integration.</p>
+          <div class="project-tags">
+            <span class="tag">Oracle 11g</span>
+            <span class="tag">Node.js</span>
+            <span class="tag">Express.js</span>
+            <span class="tag">React</span>
+            <span class="tag">REST API</span>
+            <span class="tag">SQL</span>
+            <span class="tag">EERD</span>
+          </div>
         </div>
-        <a href="https://github.com/muhammad-khubaib360" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
+        <a href="https://github.com/MKhubaib360/waste-management-system" target="_blank" class="project-link">GitHub <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
       </div>
     </div>
   </div>
@@ -1025,9 +1226,9 @@
             <div class="contact-link-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg></div>
             linkedin.com/in/muhammad-khubaib360
           </a>
-          <a href="https://github.com/muhammad-khubaib360" target="_blank" class="contact-link">
+          <a href="https://github.com/Mkhubaib360" target="_blank" class="contact-link">
             <div class="contact-link-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg></div>
-            github.com/muhammad-khubaib360
+            github.com/Mkhubaib360
           </a>
           <a href="Muhammad_Khubaib_CV.pdf" download class="contact-link">
             <div class="contact-link-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
@@ -1035,7 +1236,7 @@
           </a>
         </div>
       </div>
-      <form class="contact-form reveal reveal-delay-2" id="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <form class="contact-form reveal reveal-delay-2" id="contact-form" action="https://formspree.io/f/mlgzljag" method="POST">
         <div class="form-group"><label>Name</label><input type="text" name="name" placeholder="Your name" required></div>
         <div class="form-group"><label>Email</label><input type="email" name="email" placeholder="your@email.com" required></div>
         <div class="form-group"><label>Message</label><textarea name="message" placeholder="Tell me about your project..." required></textarea></div>
@@ -1449,26 +1650,43 @@ document.addEventListener("mousemove", (e) => {
 // ==========================
 // IMAGE 3D TILT EFFECT
 // ==========================
-const aboutImg = document.querySelector(".about-img-wrap img");
+// ─── 3D PROFILE CARD TILT
+(function(){
+  const card = document.getElementById('img3d');
+  const wrap = card ? card.closest('.about-img-wrap') : null;
+  if (!card || !wrap) return;
 
-if (aboutImg) {
-  aboutImg.addEventListener("mousemove", (e) => {
-    const rect = aboutImg.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const midX = rect.width / 2;
-    const midY = rect.height / 2;
-    const rotateY = (x - midX) / 20;
-    const rotateX = -(y - midY) / 20;
-    aboutImg.style.transform = `perspective(1000px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) scale(1.05)`;
-    aboutImg.parentElement.style.setProperty('--x', x + 'px');
-    aboutImg.parentElement.style.setProperty('--y', y + 'px');
+  // Pause float anim on hover, resume on leave
+  wrap.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const dx = ((e.clientX - r.left) / r.width  - 0.5) * 2; // -1 to 1
+    const dy = ((e.clientY - r.top)  / r.height - 0.5) * 2;
+    const rotY =  dx * 18;
+    const rotX = -dy * 14;
+    card.classList.remove('floating');
+    card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.03)`;
+    card.style.boxShadow = `
+      ${-rotY*1.5}px ${rotX + 30}px 80px rgba(0,0,0,0.85),
+      0 0 60px rgba(0,102,255,${0.15 + Math.abs(dx)*0.2}),
+      0 0 0 1px rgba(0,212,255,${0.2 + Math.abs(dx)*0.15})`;
+    // holographic shimmer follows cursor
+    const holo = card.querySelector('.img-holo');
+    if (holo) {
+      const px = (dx + 1) * 50;
+      const py = (dy + 1) * 50;
+      holo.style.background =
+        `radial-gradient(circle at ${px}% ${py}%, rgba(0,212,255,0.2), rgba(124,58,237,0.12) 40%, transparent 70%)`;
+    }
   });
 
-  aboutImg.addEventListener("mouseleave", () => {
-    aboutImg.style.transform = `perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)`;
+  wrap.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+    card.style.boxShadow = '';
+    const holo = card.querySelector('.img-holo');
+    if (holo) holo.style.background = '';
+    setTimeout(() => card.classList.add('floating'), 150);
   });
-}
+})();
 
 
 // ==========================
@@ -1524,6 +1742,24 @@ function animateParticles() {
 }
 
 animateParticles();
+
+// ─── HAMBURGER MENU
+const hamburger = document.getElementById('hamburger');
+const mobileDrawer = document.getElementById('mobile-drawer');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileDrawer.classList.toggle('open');
+  document.body.style.overflow = mobileDrawer.classList.contains('open') ? 'hidden' : '';
+});
+function closeDrawer() {
+  hamburger.classList.remove('open');
+  mobileDrawer.classList.remove('open');
+  document.body.style.overflow = '';
+}
+// close on outside click
+mobileDrawer.addEventListener('click', e => {
+  if (e.target === mobileDrawer) closeDrawer();
+});
 </script>
 </body>
 </html>
